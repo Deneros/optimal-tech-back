@@ -1,5 +1,6 @@
 package org.nicolas.optimaltech.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import jakarta.validation.ConstraintViolationException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,7 +44,31 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
     }
 
-    // Manejo de otras excepciones
+    // Manejo de excepciones de clave duplicada o violaciones de integridad de datos
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Violación de integridad de datos: Clave duplicada o restricción violada");
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT); // 409 Conflict
+    }
+
+    // Manejo de ConstraintViolationException 
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, String>> handleConstraintViolationException(ConstraintViolationException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Violación de restricciones: " + ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    // Manejo de excepciones SQL
+    @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
+    public ResponseEntity<Map<String, String>> handleSQLIntegrityConstraintViolationException(SQLIntegrityConstraintViolationException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Error de integridad de base de datos: " + ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT); // 409 Conflict
+    }
+
+    // Manejo de otras excepciones genéricas
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleAllExceptions(Exception ex) {
         Map<String, String> error = new HashMap<>();
